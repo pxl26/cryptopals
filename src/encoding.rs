@@ -6,10 +6,15 @@ pub enum HexError {
 }
 
 pub fn hex_to_base64(s: &str) -> Result<String, HexError> {
+    let bytes = hex_str_to_bytes(s)?;
+    Ok(encode_base64(&bytes))
+}
+
+pub fn hex_str_to_bytes(s: &str) -> Result<Vec<u8>, HexError> {
     if s.len() % 2 != 0 {
         return Err(HexError::OddLength);
     }
-    let bytes = &s
+    let bytes = s
         .as_bytes()
         .chunks(2)
         .map(|a| {
@@ -19,7 +24,7 @@ pub fn hex_to_base64(s: &str) -> Result<String, HexError> {
         })
         .collect::<Option<Vec<u8>>>()
         .ok_or(InvalidCharacter)?;
-    Ok(encode_base64(bytes))
+    Ok(bytes)
 }
 
 fn hex_to_raw_byte(b: u8) -> Option<u8> {
