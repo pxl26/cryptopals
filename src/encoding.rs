@@ -1,14 +1,34 @@
-pub fn hex_to_base64(s: &str) -> String {
-    encode_base64(
-        &s.as_bytes()
-            .chunks(2)
-            .map(|a| {
-                let high = (a[0] as char).to_digit(16).unwrap() as u8;
-                let low = (a[1] as char).to_digit(16).unwrap() as u8;
-                (high << 4) | low
-            })
-            .collect::<Vec<u8>>(),
-    )
+use crate::encoding::HexError::InvalidCharacter;
+
+pub enum HexError {
+    OddLength,
+    InvalidCharacter,
+}
+
+pub fn hex_to_base64(s: &str) -> Result<String, HexError> {
+    if s.len() % 2 != 0 {
+        return Err(HexError::OddLength);
+    }
+    let bytes = &s
+        .as_bytes()
+        .chunks(2)
+        .map(|a| {
+            let high = hex_to_raw_byte(a[0])?;
+            let low = hex_to_raw_byte(a[1])?;
+            Some((high << 4) | low)
+        })
+        .collect::<Option<Vec<u8>>>()
+        .ok_or(InvalidCharacter)?;
+    Ok(encode_base64(bytes))
+}
+
+fn hex_to_raw_byte(b: u8) -> Option<u8> {
+    match b {
+        b'0'..=b'9' => Some(b - b'0'),
+        b'a'..=b'f' => Some(b - b'a' + 10),
+        b'A'..=b'F' => Some(b - b'A' + 10),
+        _ => None,
+    }
 }
 
 const BASE64_CHARACTER: &[u8; 64] =
@@ -71,7 +91,7 @@ mod tests {
         assert_eq!(
             hex_to_base64(
                 "49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d"
-            ),
+            ).unwrap_or_default(),
             "SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t"
         )
     }
