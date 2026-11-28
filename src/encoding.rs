@@ -1,3 +1,4 @@
+#![allow(dead_code, unused_variables)]
 use crate::encoding::HexError::InvalidCharacter;
 
 pub enum HexError {
